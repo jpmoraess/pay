@@ -3,7 +3,7 @@ module github.com/jpmoraess/pay
 go 1.22.11
 
 require (
-	github.com/aead/chacha20poly1305 v0.0.0-20170617001512-233f39982aeb
+	github.com/aead/chacha20poly1305 v0.0.0-20201124145622-1a5aba2a8b29
 	github.com/gin-gonic/gin v1.10.0
 	github.com/golang-migrate/migrate/v4 v4.18.2
 	github.com/google/uuid v1.6.0
@@ -11,6 +11,8 @@ require (
 	github.com/o1egl/paseto v1.0.0
 	github.com/rs/zerolog v1.33.0
 	github.com/spf13/viper v1.19.0
+	github.com/techschool/simplebank v0.0.0-20250208093434-7c6f92f2bc5d
+	golang.org/x/crypto v0.31.0
 )
 
 require (
@@ -58,7 +60,6 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/arch v0.8.0 // indirect
-	golang.org/x/crypto v0.31.0 // indirect
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect
 	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/sync v0.10.0 // indirect

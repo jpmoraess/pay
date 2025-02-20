@@ -1,14 +1,19 @@
 package config
 
-import "github.com/spf13/viper"
+import (
+	"github.com/spf13/viper"
+	"time"
+)
 
 type Config struct {
-	Environment    string   `mapstructure:"ENVIRONMENT"`
-	AllowedOrigins []string `mapstructure:"ALLOWED_ORIGINS"`
-	DBSource       string   `mapstructure:"DB_SOURCE"`
-	MigrationURL   string   `mapstructure:"MIGRATION_URL"`
-	HTTPServerAddr string   `mapstructure:"HTTP_SERVER_ADDR"`
-	SymmetricKey   string   `mapstructure:"SYMMETRIC_KEY"`
+	Environment          string        `mapstructure:"ENVIRONMENT"`
+	AllowedOrigins       []string      `mapstructure:"ALLOWED_ORIGINS"`
+	DBSource             string        `mapstructure:"DB_SOURCE"`
+	MigrationURL         string        `mapstructure:"MIGRATION_URL"`
+	HTTPServerAddr       string        `mapstructure:"HTTP_SERVER_ADDR"`
+	SymmetricKey         string        `mapstructure:"SYMMETRIC_KEY"`
+	AccessTokenDuration  time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
+	RefreshTokenDuration time.Duration `mapstructure:"REFRESH_TOKEN_DURATION"`
 }
 
 func LoadConfig(path string) (config *Config, err error) {
