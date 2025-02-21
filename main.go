@@ -3,13 +3,17 @@ package main
 import (
 	"context"
 	"errors"
+	"github.com/gin-gonic/gin"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jpmoraess/pay/api"
 	"github.com/jpmoraess/pay/config"
 	db "github.com/jpmoraess/pay/db/sqlc"
+	"github.com/jpmoraess/pay/internal/adapters/database"
+	"github.com/jpmoraess/pay/internal/application/usecases"
+	handlers "github.com/jpmoraess/pay/internal/infra/http"
+	"github.com/jpmoraess/pay/token"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"net/http"
@@ -44,8 +48,31 @@ func main() {
 
 	store := db.NewStore(connPool)
 
+	// gin framework
+	router := gin.Default()
+	router.Use(gin.Recovery())
+	router.Use(gin.Logger())
+
+	tokenMaker, err := token.NewPasetoMaker(cfg.SymmetricKey)
+	if err != nil {
+		log.Fatal().Err(err).Msg("cannot create token maker")
+	}
+
+	// session
+	sessionRepository := database.NewSessionRepository(store)
+	sessionUseCase := usecases.NewSessionUseCase(sessionRepository)
+
+	// user
+	userRepository := database.NewUserRepository(store)
+	userUseCase := usecases.NewUserUseCase(cfg, tokenMaker, userRepository, sessionUseCase)
+
+	// HTTP handlers
+	handlers.NewUserHandler(router, userUseCase)
+	handlers.NewTokenHandler(cfg, tokenMaker, router, userUseCase, sessionUseCase)
+	handlers.NewHelloHandler(router, tokenMaker)
+
 	// create HTTP server
-	srv := mustInitServer(store, cfg)
+	srv := mustInitServer(router, cfg)
 
 	errCh := make(chan error, 1)
 
@@ -93,14 +120,10 @@ func mustInitDatabase(ctx context.Context, cfg *config.Config) *pgxpool.Pool {
 	return connPool
 }
 
-func mustInitServer(store db.Store, cfg *config.Config) *http.Server {
-	server, err := api.NewServer(store, cfg)
-	if err != nil {
-		log.Fatal().Err(err).Msg("cannot create server")
-	}
+func mustInitServer(router *gin.Engine, cfg *config.Config) *http.Server {
 	return &http.Server{
 		Addr:    cfg.HTTPServerAddr,
-		Handler: server.Handler(),
+		Handler: router,
 	}
 }
 

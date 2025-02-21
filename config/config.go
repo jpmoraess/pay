@@ -14,6 +14,8 @@ type Config struct {
 	SymmetricKey         string        `mapstructure:"SYMMETRIC_KEY"`
 	AccessTokenDuration  time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
 	RefreshTokenDuration time.Duration `mapstructure:"REFRESH_TOKEN_DURATION"`
+	AsaasURL             string        `mapstructure:"ASAAS_URL"`
+	AsaasApiKey          string        `mapstructure:"ASAAS_API_KEY"`
 }
 
 func LoadConfig(path string) (config *Config, err error) {
