@@ -16,6 +16,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 var interruptSignals = []os.Signal{os.Interrupt, syscall.SIGTERM, syscall.SIGINT}
@@ -26,39 +27,37 @@ func main() {
 		log.Fatal().Err(err).Msg("cannot load config")
 	}
 
-	if cfg.Environment == "development" {
-		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-	}
+	// setup logger
+	setupLogger(cfg.Environment)
 
 	ctx, stop := signal.NotifyContext(context.Background(), interruptSignals...)
 	defer stop()
 
-	connPool, err := pgxpool.New(ctx, cfg.DBSource)
-	if err != nil {
-		log.Fatal().Err(err).Msg("cannot connect to database")
-	}
-	defer connPool.Close()
+	// database
+	connPool := mustInitDatabase(ctx, cfg)
+	defer func() {
+		log.Info().Msg("closing database connection")
+		connPool.Close()
+	}()
 
 	runMigrations(cfg.MigrationURL, cfg.DBSource)
 
 	store := db.NewStore(connPool)
 
-	server, err := api.NewServer(store, cfg)
-	if err != nil {
-		log.Fatal().Err(err).Msg("cannot create server")
-	}
+	// create HTTP server
+	srv := mustInitServer(store, cfg)
 
-	srv := &http.Server{
-		Addr:    cfg.HTTPServerAddr,
-		Handler: server.Handler(),
-	}
+	errCh := make(chan error, 1)
 
 	go func() {
+		log.Info().Msgf("starting server on %s", srv.Addr)
 		if err = srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatal().Err(err).Msg("cannot start server")
+			errCh <- err
 		}
 	}()
-	<-ctx.Done()
+
+	// graceful shutdown
+	gracefulShutdown(ctx, srv, errCh)
 }
 
 func runMigrations(migrationURL, dbSource string) {
@@ -72,4 +71,53 @@ func runMigrations(migrationURL, dbSource string) {
 	}
 
 	log.Info().Msg("database migrated successfully")
+}
+
+func setupLogger(env string) {
+	if env == "development" {
+		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	}
+}
+
+func mustInitDatabase(ctx context.Context, cfg *config.Config) *pgxpool.Pool {
+	poolConfig, err := pgxpool.ParseConfig(cfg.DBSource)
+	if err != nil {
+		log.Fatal().Err(err).Msg("invalid database configuration")
+	}
+
+	connPool, err := pgxpool.NewWithConfig(ctx, poolConfig)
+	if err != nil {
+		log.Fatal().Err(err).Msg("cannot connect to database")
+	}
+
+	return connPool
+}
+
+func mustInitServer(store db.Store, cfg *config.Config) *http.Server {
+	server, err := api.NewServer(store, cfg)
+	if err != nil {
+		log.Fatal().Err(err).Msg("cannot create server")
+	}
+	return &http.Server{
+		Addr:    cfg.HTTPServerAddr,
+		Handler: server.Handler(),
+	}
+}
+
+func gracefulShutdown(ctx context.Context, src *http.Server, errCh <-chan error) {
+	select {
+	case <-ctx.Done():
+		log.Info().Msg("shutting down server")
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		if err := src.Shutdown(shutdownCtx); err != nil {
+			log.Error().Err(err).Msg("server forced to shutdown")
+		} else {
+			log.Info().Msg("server gracefully shutdown")
+		}
+
+	case err := <-errCh:
+		log.Error().Err(err).Msg("server encountered an error")
+	}
 }
