@@ -15,8 +15,9 @@ func NewHelloHandler(router *gin.Engine, tokenMaker token.Maker) {
 	handler := &HelloHandler{}
 	helloGroup := router.Group("/hello").
 		Use(middleware.AuthMiddleware(tokenMaker))
-
-	helloGroup.GET("/", handler.HelloWorld)
+	{
+		helloGroup.GET("/", handler.HelloWorld)
+	}
 }
 
 func (h *HelloHandler) HelloWorld(c *gin.Context) {
