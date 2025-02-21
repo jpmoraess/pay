@@ -94,7 +94,11 @@ func (h *UserHandler) UserLogin(c *gin.Context) {
 	})
 	if err != nil {
 		if errors.Is(err, usecases.ErrUserNotFound) {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()}) // or StatusUnauthorized
+			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+			return
+		}
+		if errors.Is(err, usecases.ErrInvalidPassword) {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

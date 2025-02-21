@@ -12,7 +12,7 @@ type HelloHandler struct {
 }
 
 func NewHelloHandler(router *gin.Engine, tokenMaker token.Maker) {
-	handler := &HelloHandler{}
+	handler := &HelloHandler{tokenMaker: tokenMaker}
 	helloGroup := router.Group("/hello").
 		Use(middleware.AuthMiddleware(tokenMaker))
 	{

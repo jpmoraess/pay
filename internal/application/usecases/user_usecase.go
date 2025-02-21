@@ -9,10 +9,12 @@ import (
 	"github.com/jpmoraess/pay/internal/domain"
 	"github.com/jpmoraess/pay/token"
 	"github.com/jpmoraess/pay/util"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var (
 	ErrUserNotFound      = errors.New("user not found")
+	ErrInvalidPassword   = errors.New("invalid password")
 	ErrUserAlreadyExists = errors.New("user already exists")
 )
 
@@ -60,6 +62,9 @@ func (uc *userUseCase) Login(ctx context.Context, input *ports.LoginUserInput) (
 
 	err = util.CheckPassword(input.Password, user.Password)
 	if err != nil {
+		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
+			return nil, ErrInvalidPassword
+		}
 		return nil, err
 	}
 
@@ -73,12 +78,22 @@ func (uc *userUseCase) Login(ctx context.Context, input *ports.LoginUserInput) (
 		return nil, err
 	}
 
+	userAgent, ok := ctx.Value("user-agent").(string)
+	if !ok {
+		userAgent = "unknown"
+	}
+
+	clientIP, ok := ctx.Value("client-ip").(string)
+	if !ok {
+		clientIP = "unknown"
+	}
+
 	session, err := uc.sessionService.Create(ctx, &ports.CreateSessionInput{
 		ID:           refreshTokenPayload.ID,
 		Email:        user.Email,
 		RefreshToken: refreshToken,
-		UserAgent:    ctx.Value("user-agent").(string),
-		ClientIP:     ctx.Value("client-ip").(string),
+		UserAgent:    userAgent,
+		ClientIP:     clientIP,
 		IsBlocked:    false,
 		ExpiresAt:    refreshTokenPayload.ExpiredAt,
 	})

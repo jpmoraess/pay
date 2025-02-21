@@ -3,6 +3,9 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -11,6 +14,7 @@ import (
 	"github.com/jpmoraess/pay/config"
 	db "github.com/jpmoraess/pay/db/sqlc"
 	"github.com/jpmoraess/pay/internal/adapters/database"
+	"github.com/jpmoraess/pay/internal/application/ports"
 	"github.com/jpmoraess/pay/internal/application/usecases"
 	handlers "github.com/jpmoraess/pay/internal/infra/http"
 	"github.com/jpmoraess/pay/token"
@@ -31,13 +35,11 @@ func main() {
 		log.Fatal().Err(err).Msg("cannot load config")
 	}
 
-	// setup logger
 	setupLogger(cfg.Environment)
 
 	ctx, stop := signal.NotifyContext(context.Background(), interruptSignals...)
 	defer stop()
 
-	// database
 	connPool := mustInitDatabase(ctx, cfg)
 	defer func() {
 		log.Info().Msg("closing database connection")
@@ -48,30 +50,19 @@ func main() {
 
 	store := db.NewStore(connPool)
 
-	// gin framework
-	router := gin.Default()
-	router.Use(gin.Recovery())
-	router.Use(gin.Logger())
-
 	tokenMaker, err := token.NewPasetoMaker(cfg.SymmetricKey)
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot create token maker")
 	}
 
-	// session
 	sessionRepository := database.NewSessionRepository(store)
 	sessionUseCase := usecases.NewSessionUseCase(sessionRepository)
 
-	// user
 	userRepository := database.NewUserRepository(store)
 	userUseCase := usecases.NewUserUseCase(cfg, tokenMaker, userRepository, sessionUseCase)
 
-	// HTTP handlers
-	handlers.NewUserHandler(router, userUseCase)
-	handlers.NewTokenHandler(cfg, tokenMaker, router, userUseCase, sessionUseCase)
-	handlers.NewHelloHandler(router, tokenMaker)
+	router := setupRouter(cfg, tokenMaker, userUseCase, sessionUseCase)
 
-	// create HTTP server
 	srv := mustInitServer(router, cfg)
 
 	errCh := make(chan error, 1)
@@ -83,10 +74,10 @@ func main() {
 		}
 	}()
 
-	// graceful shutdown
 	gracefulShutdown(ctx, srv, errCh)
 }
 
+// runMigrations - run database migrations
 func runMigrations(migrationURL, dbSource string) {
 	migration, err := migrate.New(migrationURL, dbSource)
 	if err != nil {
@@ -100,12 +91,14 @@ func runMigrations(migrationURL, dbSource string) {
 	log.Info().Msg("database migrated successfully")
 }
 
+// setupLogger - setup logger according environment
 func setupLogger(env string) {
 	if env == "development" {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	}
 }
 
+// mustInitDatabase - init database connection
 func mustInitDatabase(ctx context.Context, cfg *config.Config) *pgxpool.Pool {
 	poolConfig, err := pgxpool.ParseConfig(cfg.DBSource)
 	if err != nil {
@@ -120,6 +113,7 @@ func mustInitDatabase(ctx context.Context, cfg *config.Config) *pgxpool.Pool {
 	return connPool
 }
 
+// mustInitServer - initiate http server
 func mustInitServer(router *gin.Engine, cfg *config.Config) *http.Server {
 	return &http.Server{
 		Addr:    cfg.HTTPServerAddr,
@@ -127,6 +121,7 @@ func mustInitServer(router *gin.Engine, cfg *config.Config) *http.Server {
 	}
 }
 
+// gracefulShutdown - shutdown http server gracefully
 func gracefulShutdown(ctx context.Context, src *http.Server, errCh <-chan error) {
 	select {
 	case <-ctx.Done():
@@ -143,4 +138,38 @@ func gracefulShutdown(ctx context.Context, src *http.Server, errCh <-chan error)
 	case err := <-errCh:
 		log.Error().Err(err).Msg("server encountered an error")
 	}
+}
+
+// setupRouter - init gin and configure middlewares and handlers
+func setupRouter(cfg *config.Config, tokenMaker token.Maker, userSvc ports.UserService, sessionSvc ports.SessionService) *gin.Engine {
+	router := gin.Default()
+	setupMiddlewares(router, cfg)
+
+	handlers.NewUserHandler(router, userSvc)
+	handlers.NewTokenHandler(cfg, tokenMaker, router, userSvc, sessionSvc)
+	handlers.NewHelloHandler(router, tokenMaker)
+
+	return router
+}
+
+// setupMiddlewares - configure the gin middlewares
+func setupMiddlewares(router *gin.Engine, cfg *config.Config) {
+	router.Use(gin.Recovery())
+	router.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
+		log.Info().
+			Str("status", fmt.Sprintf("%d", param.StatusCode)).
+			Str("method", param.Method).
+			Str("path", param.Path).
+			Dur("latency", param.Latency).
+			Str("client_ip", param.ClientIP).
+			Msg("incoming request")
+		return ""
+	}))
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     cfg.AllowedOrigins,
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
+		AllowHeaders:     []string{"Content-Type", "Authorization"},
+		AllowCredentials: true,
+	}))
+	router.Use(gzip.Gzip(gzip.DefaultCompression))
 }
