@@ -6,7 +6,6 @@
         "contact": {},
         "version": "1.0.0"
     },
-    "host": "https://pay-sptq.onrender.com/",
     "paths": {
         "/hello": {
             "get": {

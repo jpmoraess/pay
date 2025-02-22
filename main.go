@@ -36,7 +36,6 @@ var interruptSignals = []os.Signal{os.Interrupt, syscall.SIGTERM, syscall.SIGINT
 // @title			Pay
 // @version		1.0.0
 // @description	PayGolang
-// @host			https://pay-sptq.onrender.com/
 func main() {
 	cfg, err := config.LoadConfig(".")
 	if err != nil {
