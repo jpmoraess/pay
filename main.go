@@ -15,6 +15,7 @@ import (
 	db "github.com/jpmoraess/pay/db/sqlc"
 	"github.com/jpmoraess/pay/docs"
 	_ "github.com/jpmoraess/pay/docs"
+	"github.com/jpmoraess/pay/gateway"
 	"github.com/jpmoraess/pay/internal/adapters/database"
 	"github.com/jpmoraess/pay/internal/application/ports"
 	"github.com/jpmoraess/pay/internal/application/usecases"
@@ -74,13 +75,20 @@ func main() {
 		log.Fatal().Err(err).Msg("cannot create token maker")
 	}
 
+	asaas := gateway.NewAsaas(cfg, &http.Client{
+		Timeout: time.Second * 10,
+	})
+
 	sessionRepository := database.NewSessionRepository(store)
 	sessionUseCase := usecases.NewSessionUseCase(sessionRepository)
 
 	userRepository := database.NewUserRepository(store)
 	userUseCase := usecases.NewUserUseCase(cfg, tokenMaker, userRepository, sessionUseCase)
 
-	router := setupRouter(cfg, tokenMaker, userUseCase, sessionUseCase)
+	paymentRepository := database.NewPaymentRepository(store)
+	paymentUseCase := usecases.NewPaymentUseCase(paymentRepository, asaas)
+
+	router := setupRouter(cfg, tokenMaker, userUseCase, sessionUseCase, paymentUseCase)
 
 	srv := mustInitServer(router, cfg)
 
@@ -160,15 +168,22 @@ func gracefulShutdown(ctx context.Context, src *http.Server, errCh <-chan error)
 }
 
 // setupRouter - init gin and configure middlewares and handlers
-func setupRouter(cfg *config.Config, tokenMaker token.Maker, userSvc ports.UserService, sessionSvc ports.SessionService) *gin.Engine {
+func setupRouter(
+	cfg *config.Config,
+	tokenMaker token.Maker,
+	userService ports.UserService,
+	sessionService ports.SessionService,
+	paymentService ports.PaymentService,
+) *gin.Engine {
 	router := gin.Default()
 	setupMiddlewares(router, cfg)
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	handlers.NewUserHandler(router, userSvc)
-	handlers.NewTokenHandler(cfg, tokenMaker, router, userSvc, sessionSvc)
+	handlers.NewUserHandler(router, userService)
+	handlers.NewTokenHandler(cfg, tokenMaker, router, userService, sessionService)
 	handlers.NewHelloHandler(router, tokenMaker)
+	handlers.NewPaymentHandler(router, tokenMaker, paymentService)
 
 	return router
 }

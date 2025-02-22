@@ -55,6 +55,54 @@ const docTemplate = `{
                 }
             }
         },
+        "/payments": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Perform payment creation",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "payments"
+                ],
+                "summary": "Create payment",
+                "parameters": [
+                    {
+                        "description": "Payment request data",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/http.createPaymentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/http.createPaymentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/tokens/renew": {
             "post": {
                 "description": "Perform access token renew",
@@ -186,6 +234,34 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "http.createPaymentRequest": {
+            "type": "object",
+            "required": [
+                "due_date",
+                "value"
+            ],
+            "properties": {
+                "due_date": {
+                    "type": "string",
+                    "example": "2025-02-26"
+                },
+                "value": {
+                    "type": "number",
+                    "example": 20.99
+                }
+            }
+        },
+        "http.createPaymentResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "number"
+                }
+            }
+        },
         "http.createUserRequest": {
             "type": "object",
             "required": [

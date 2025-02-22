@@ -8,7 +8,18 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type Payment struct {
+	ID         uuid.UUID      `json:"id"`
+	ExternalID string         `json:"external_id"`
+	Value      pgtype.Numeric `json:"value"`
+	DueDate    time.Time      `json:"due_date"`
+	Status     string         `json:"status"`
+	CreatedAt  time.Time      `json:"created_at"`
+	UpdatedAt  time.Time      `json:"updated_at"`
+}
 
 type Session struct {
 	ID           uuid.UUID `json:"id"`

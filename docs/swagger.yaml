@@ -1,4 +1,23 @@
 definitions:
+  http.createPaymentRequest:
+    properties:
+      due_date:
+        example: "2025-02-26"
+        type: string
+      value:
+        example: 20.99
+        type: number
+    required:
+    - due_date
+    - value
+    type: object
+  http.createPaymentResponse:
+    properties:
+      id:
+        type: string
+      value:
+        type: number
+    type: object
   http.createUserRequest:
     properties:
       email:
@@ -97,6 +116,36 @@ paths:
       summary: Hello world
       tags:
       - hello
+  /payments:
+    post:
+      consumes:
+      - application/json
+      description: Perform payment creation
+      parameters:
+      - description: Payment request data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.createPaymentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/http.createPaymentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create payment
+      tags:
+      - payments
   /tokens/renew:
     post:
       consumes:

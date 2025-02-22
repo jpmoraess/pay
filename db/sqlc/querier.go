@@ -11,8 +11,11 @@ import (
 )
 
 type Querier interface {
+	CreatePayment(ctx context.Context, arg CreatePaymentParams) (Payment, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	GetPayment(ctx context.Context, id uuid.UUID) (Payment, error)
+	GetPaymentByExternal(ctx context.Context, externalID string) (Payment, error)
 	GetSession(ctx context.Context, id uuid.UUID) (Session, error)
 	GetUser(ctx context.Context, id uuid.UUID) (User, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)

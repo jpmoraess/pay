@@ -12,6 +12,7 @@ require (
 	github.com/jackc/pgx/v5 v5.7.2
 	github.com/o1egl/paseto v1.0.0
 	github.com/rs/zerolog v1.33.0
+	github.com/shopspring/decimal v1.4.0
 	github.com/spf13/viper v1.19.0
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.0

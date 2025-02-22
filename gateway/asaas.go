@@ -17,35 +17,36 @@ type Asaas struct {
 	client *http.Client
 }
 
-type billingType int
+type BillingType int
 
 const (
-	Pix billingType = iota
+	Pix BillingType = iota
 	Boleto
 	CreditCard
 )
 
-var billingTypeToString = map[billingType]string{
+var BillingTypeToString = map[BillingType]string{
 	Pix:        "PIX",
 	Boleto:     "BOLETO",
 	CreditCard: "CREDIT_CARD",
 }
 
-type createPaymentRequest struct {
-	Customer    string      `json:"customer"`
-	BillingType billingType `json:"billingType"`
-	Value       float64     `json:"value"`
-	DueDate     string      `json:"dueDate"`
-	Description string      `json:"description"`
+type CreatePaymentRequest struct {
+	Customer          string      `json:"customer"`
+	BillingType       BillingType `json:"billingType"`
+	Value             float64     `json:"value"`
+	DueDate           string      `json:"dueDate"`
+	Description       string      `json:"description"`
+	ExternalReference string      `json:"externalReference"`
 }
 
-type createPaymentResponse struct {
+type CreatePaymentResponse struct {
 	ID        string  `json:"id"`
 	CreatedAt string  `json:"dateCreated"`
 	Value     float64 `json:"value"`
 }
 
-type errorResponse struct {
+type ErrorResponse struct {
 	Errors []struct {
 		Code        string `json:"code"`
 		Description string `json:"description"`
@@ -59,7 +60,7 @@ func NewAsaas(cfg *config.Config, client *http.Client) *Asaas {
 	return &Asaas{cfg, client}
 }
 
-func (a *Asaas) createPayment(ctx context.Context, request *createPaymentRequest) (response *createPaymentResponse, err error) {
+func (a *Asaas) CreatePayment(ctx context.Context, request *CreatePaymentRequest) (response *CreatePaymentResponse, err error) {
 	url := fmt.Sprintf("%s/v3/payments", strings.TrimRight(a.cfg.AsaasURL, "/"))
 
 	body, err := json.Marshal(request)
@@ -90,7 +91,7 @@ func (a *Asaas) createPayment(ctx context.Context, request *createPaymentRequest
 	}
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		var errorResponse errorResponse
+		var errorResponse ErrorResponse
 		if err = json.Unmarshal(respBody, &errorResponse); err != nil {
 			return nil, fmt.Errorf("error parsing error response (status: %d): %s", resp.StatusCode, string(respBody))
 		}
@@ -109,19 +110,19 @@ func (a *Asaas) createPayment(ctx context.Context, request *createPaymentRequest
 	return response, nil
 }
 
-func (b billingType) MarshalJSON() ([]byte, error) {
-	if str, ok := billingTypeToString[b]; ok {
+func (b BillingType) MarshalJSON() ([]byte, error) {
+	if str, ok := BillingTypeToString[b]; ok {
 		return json.Marshal(str)
 	}
 	return nil, fmt.Errorf("invalid billingType: %d", b)
 }
 
-func (b *billingType) UnmarshalJSON(data []byte) error {
+func (b *BillingType) UnmarshalJSON(data []byte) error {
 	var s string
 	if err := json.Unmarshal(data, &s); err != nil {
 		return err
 	}
-	for key, val := range billingTypeToString {
+	for key, val := range BillingTypeToString {
 		if val == s {
 			*b = key
 			return nil
