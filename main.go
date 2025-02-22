@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jpmoraess/pay/config"
 	db "github.com/jpmoraess/pay/db/sqlc"
+	"github.com/jpmoraess/pay/docs"
 	_ "github.com/jpmoraess/pay/docs"
 	"github.com/jpmoraess/pay/internal/adapters/database"
 	"github.com/jpmoraess/pay/internal/application/ports"
@@ -35,12 +36,18 @@ var interruptSignals = []os.Signal{os.Interrupt, syscall.SIGTERM, syscall.SIGINT
 // @title			Pay
 // @version		1.0.0
 // @description	PayGolang
-// @host			localhost:8080
+// @host			https://pay-sptq.onrender.com/
 func main() {
 	cfg, err := config.LoadConfig(".")
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot load config")
 	}
+
+	swaggerHost := cfg.SwaggerHost
+	if len(swaggerHost) == 0 {
+		swaggerHost = "localhost:8080"
+	}
+	docs.SwaggerInfo.Host = swaggerHost
 
 	setupLogger(cfg.Environment)
 

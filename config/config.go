@@ -16,6 +16,7 @@ type Config struct {
 	RefreshTokenDuration time.Duration `mapstructure:"REFRESH_TOKEN_DURATION"`
 	AsaasURL             string        `mapstructure:"ASAAS_URL"`
 	AsaasApiKey          string        `mapstructure:"ASAAS_API_KEY"`
+	SwaggerHost          string        `mapstructure:"SWAGGER_HOST"`
 }
 
 func LoadConfig(path string) (config *Config, err error) {
