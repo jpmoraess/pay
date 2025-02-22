@@ -24,9 +24,9 @@ func NewUserHandler(router *gin.Engine, userService ports.UserService) {
 }
 
 type createUserRequest struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=8,max=20"`
-	FullName string `json:"full_name" binding:"required,max=50"`
+	Email    string `json:"email" binding:"required,email" example:"john@doe.com"`
+	Password string `json:"password" binding:"required,min=8,max=20" example:"123456"`
+	FullName string `json:"full_name" binding:"required,max=50" example:"John Doe"`
 }
 
 type userResponse struct {
@@ -35,6 +35,17 @@ type userResponse struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+// CreateUser Create user
+//
+//	@Summary		Create user
+//	@Description	Perform user creation
+//	@Tags			users
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		createUserRequest	true	"create request data"
+//	@Success		201		{object}	userResponse
+//	@Failure		400		{object}	map[string]string
+//	@Router			/users [post]
 func (h *UserHandler) CreateUser(c *gin.Context) {
 	var req createUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -66,8 +77,8 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 }
 
 type loginRequest struct {
-	Email    string `json:"email" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Email    string `json:"email" binding:"required" example:"john@doe.com"`
+	Password string `json:"password" binding:"required" example:"123456"`
 }
 
 type loginResponse struct {
@@ -78,6 +89,17 @@ type loginResponse struct {
 	RefreshTokenExpiresAt time.Time `json:"refresh_token_expires_at"`
 }
 
+// UserLogin User login
+//
+//	@Summary		User login
+//	@Description	Perform user login
+//	@Tags			users
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		loginRequest	true	"Login request data"
+//	@Success		200		{object}	loginResponse
+//	@Failure		400		{object}	map[string]string
+//	@Router			/users/login [post]
 func (h *UserHandler) UserLogin(c *gin.Context) {
 	var req loginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

@@ -1,0 +1,185 @@
+definitions:
+  http.createUserRequest:
+    properties:
+      email:
+        example: john@doe.com
+        type: string
+      full_name:
+        example: John Doe
+        maxLength: 50
+        type: string
+      password:
+        example: "123456"
+        maxLength: 20
+        minLength: 8
+        type: string
+    required:
+    - email
+    - full_name
+    - password
+    type: object
+  http.loginRequest:
+    properties:
+      email:
+        example: john@doe.com
+        type: string
+      password:
+        example: "123456"
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  http.loginResponse:
+    properties:
+      access_token:
+        type: string
+      access_token_expires_at:
+        type: string
+      refresh_token:
+        type: string
+      refresh_token_expires_at:
+        type: string
+      session_id:
+        type: string
+    type: object
+  http.renewAccessTokenRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  http.renewAccessTokenResponse:
+    properties:
+      access_token:
+        type: string
+      access_token_expires_at:
+        type: string
+    type: object
+  http.userResponse:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: PayGolang
+  title: Pay
+  version: 1.0.0
+paths:
+  /hello:
+    get:
+      consumes:
+      - application/json
+      description: Perform hello world
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Hello world
+      tags:
+      - hello
+  /tokens/renew:
+    post:
+      consumes:
+      - application/json
+      description: Perform access token renew
+      parameters:
+      - description: Token renew request data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.renewAccessTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.renewAccessTokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Renew access token
+      tags:
+      - tokens
+  /users:
+    post:
+      consumes:
+      - application/json
+      description: Perform user creation
+      parameters:
+      - description: create request data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.createUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/http.userResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create user
+      tags:
+      - users
+  /users/login:
+    post:
+      consumes:
+      - application/json
+      description: Perform user login
+      parameters:
+      - description: Login request data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.loginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.loginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: User login
+      tags:
+      - users
+swagger: "2.0"

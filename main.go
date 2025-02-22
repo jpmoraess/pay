@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jpmoraess/pay/config"
 	db "github.com/jpmoraess/pay/db/sqlc"
+	_ "github.com/jpmoraess/pay/docs"
 	"github.com/jpmoraess/pay/internal/adapters/database"
 	"github.com/jpmoraess/pay/internal/application/ports"
 	"github.com/jpmoraess/pay/internal/application/usecases"
@@ -20,6 +21,8 @@ import (
 	"github.com/jpmoraess/pay/token"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	swaggerFiles "github.com/swaggo/files"
+	"github.com/swaggo/gin-swagger"
 	"net/http"
 	"os"
 	"os/signal"
@@ -29,6 +32,10 @@ import (
 
 var interruptSignals = []os.Signal{os.Interrupt, syscall.SIGTERM, syscall.SIGINT}
 
+// @title			Pay
+// @version		1.0.0
+// @description	PayGolang
+// @host			localhost:8080
 func main() {
 	cfg, err := config.LoadConfig(".")
 	if err != nil {
@@ -144,6 +151,8 @@ func gracefulShutdown(ctx context.Context, src *http.Server, errCh <-chan error)
 func setupRouter(cfg *config.Config, tokenMaker token.Maker, userSvc ports.UserService, sessionSvc ports.SessionService) *gin.Engine {
 	router := gin.Default()
 	setupMiddlewares(router, cfg)
+
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	handlers.NewUserHandler(router, userSvc)
 	handlers.NewTokenHandler(cfg, tokenMaker, router, userSvc, sessionSvc)

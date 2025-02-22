@@ -36,6 +36,17 @@ type renewAccessTokenResponse struct {
 	AccessTokenExpiresAt time.Time `json:"access_token_expires_at"`
 }
 
+// RenewToken Renew access token
+//
+//	@Summary		Renew access token
+//	@Description	Perform access token renew
+//	@Tags			tokens
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		renewAccessTokenRequest	true	"Token renew request data"
+//	@Success		200		{object}	renewAccessTokenResponse
+//	@Failure		400		{object}	map[string]string
+//	@Router			/tokens/renew [post]
 func (h *TokenHandler) RenewToken(c *gin.Context) {
 	var req renewAccessTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
