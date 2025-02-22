@@ -181,4 +181,10 @@ paths:
       summary: User login
       tags:
       - users
+securityDefinitions:
+  BearerAuth:
+    description: Enter "Bearer {your_token}" in the field below (without quotes)
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"

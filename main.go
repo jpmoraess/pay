@@ -33,9 +33,15 @@ import (
 
 var interruptSignals = []os.Signal{os.Interrupt, syscall.SIGTERM, syscall.SIGINT}
 
-// @title			Pay
-// @version		1.0.0
-// @description	PayGolang
+//	@title			Pay
+//	@version		1.0.0
+//	@description	PayGolang
+
+// @securityDefinitions.apiKey	BearerAuth
+// @type						apiKey
+// @in							header
+// @name						Authorization
+// @description				Enter "Bearer {your_token}" in the field below (without quotes)
 func main() {
 	cfg, err := config.LoadConfig(".")
 	if err != nil {
