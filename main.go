@@ -10,6 +10,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/hibiken/asynq"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jpmoraess/pay/config"
 	db "github.com/jpmoraess/pay/db/sqlc"
@@ -21,6 +22,7 @@ import (
 	"github.com/jpmoraess/pay/internal/infra/gateway"
 	handlers "github.com/jpmoraess/pay/internal/infra/http"
 	"github.com/jpmoraess/pay/token"
+	"github.com/jpmoraess/pay/worker"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	swaggerFiles "github.com/swaggo/files"
@@ -70,6 +72,13 @@ func main() {
 
 	store := db.NewStore(connPool)
 
+	redisOpt := asynq.RedisClientOpt{
+		Addr: cfg.RedisAddr,
+	}
+
+	taskDistributor := worker.NewRedisTaskDistributor(redisOpt)
+	_ = taskDistributor
+
 	tokenMaker, err := token.NewPasetoMaker(cfg.SymmetricKey)
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot create token maker")
@@ -83,7 +92,7 @@ func main() {
 	sessionUseCase := usecases.NewSessionUseCase(sessionRepository)
 
 	userRepository := database.NewUserRepository(store)
-	userUseCase := usecases.NewUserUseCase(cfg, tokenMaker, userRepository, sessionUseCase)
+	userUseCase := usecases.NewUserUseCase(cfg, tokenMaker, userRepository, sessionUseCase, taskDistributor)
 
 	paymentRepository := database.NewPaymentRepository(store)
 	paymentUseCase := usecases.NewPaymentUseCase(paymentRepository, asaas)

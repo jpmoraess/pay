@@ -9,24 +9,39 @@ import (
 	"github.com/jpmoraess/pay/internal/domain"
 	"github.com/jpmoraess/pay/token"
 	"github.com/jpmoraess/pay/util"
+	"github.com/jpmoraess/pay/worker"
 	"golang.org/x/crypto/bcrypt"
 )
 
 var (
-	ErrUserNotFound      = errors.New("user not found")
-	ErrInvalidPassword   = errors.New("invalid password")
-	ErrUserAlreadyExists = errors.New("user already exists")
+	ErrUserNotFound          = errors.New("user not found")
+	ErrInvalidPassword       = errors.New("invalid password")
+	ErrUserAlreadyExists     = errors.New("user already exists")
+	ErrSendEmailVerifyFailed = errors.New("failed to distribute task to send verify email")
 )
 
 type userUseCase struct {
-	cfg            *config.Config
-	tokenMaker     token.Maker
-	repository     ports.UserRepository
-	sessionService ports.SessionService
+	cfg             *config.Config
+	tokenMaker      token.Maker
+	repository      ports.UserRepository
+	sessionService  ports.SessionService
+	taskDistributor worker.TaskDistributor
 }
 
-func NewUserUseCase(cfg *config.Config, tokenMaker token.Maker, repository ports.UserRepository, sessionService ports.SessionService) *userUseCase {
-	return &userUseCase{cfg: cfg, tokenMaker: tokenMaker, repository: repository, sessionService: sessionService}
+func NewUserUseCase(
+	cfg *config.Config,
+	tokenMaker token.Maker,
+	repository ports.UserRepository,
+	sessionService ports.SessionService,
+	taskDistributor worker.TaskDistributor,
+) *userUseCase {
+	return &userUseCase{
+		cfg:             cfg,
+		tokenMaker:      tokenMaker,
+		repository:      repository,
+		sessionService:  sessionService,
+		taskDistributor: taskDistributor,
+	}
 }
 
 func (uc *userUseCase) Create(ctx context.Context, input *ports.CreateUserInput) (*ports.CreateUserOutput, error) {
@@ -41,6 +56,14 @@ func (uc *userUseCase) Create(ctx context.Context, input *ports.CreateUserInput)
 			return nil, ErrUserAlreadyExists
 		}
 		return nil, err
+	}
+
+	taskPayload := &worker.PayloadSendVerifyEmail{
+		Email: user.Email,
+	}
+	err = uc.taskDistributor.DistributeTaskSendVerifyEmail(ctx, taskPayload)
+	if err != nil {
+		return nil, ErrSendEmailVerifyFailed
 	}
 
 	output := &ports.CreateUserOutput{

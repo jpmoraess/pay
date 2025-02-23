@@ -10,6 +10,7 @@ type Config struct {
 	AllowedOrigins       []string      `mapstructure:"ALLOWED_ORIGINS"`
 	DBSource             string        `mapstructure:"DB_SOURCE"`
 	MigrationURL         string        `mapstructure:"MIGRATION_URL"`
+	RedisAddr            string        `mapstructure:"REDIS_ADDR"`
 	HTTPServerAddr       string        `mapstructure:"HTTP_SERVER_ADDR"`
 	SymmetricKey         string        `mapstructure:"SYMMETRIC_KEY"`
 	AccessTokenDuration  time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
