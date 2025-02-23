@@ -3,6 +3,7 @@ package usecases
 import (
 	"context"
 	"errors"
+	"github.com/hibiken/asynq"
 	"github.com/jpmoraess/pay/config"
 	db "github.com/jpmoraess/pay/db/sqlc"
 	"github.com/jpmoraess/pay/internal/application/ports"
@@ -11,6 +12,7 @@ import (
 	"github.com/jpmoraess/pay/util"
 	"github.com/jpmoraess/pay/worker"
 	"golang.org/x/crypto/bcrypt"
+	"time"
 )
 
 var (
@@ -61,7 +63,12 @@ func (uc *userUseCase) Create(ctx context.Context, input *ports.CreateUserInput)
 	taskPayload := &worker.PayloadSendVerifyEmail{
 		Email: user.Email,
 	}
-	err = uc.taskDistributor.DistributeTaskSendVerifyEmail(ctx, taskPayload)
+	opts := []asynq.Option{
+		asynq.MaxRetry(10),
+		asynq.ProcessIn(5 * time.Second),
+		asynq.Queue(worker.QueueCritical),
+	}
+	err = uc.taskDistributor.DistributeTaskSendVerifyEmail(ctx, taskPayload, opts...)
 	if err != nil {
 		return nil, ErrSendEmailVerifyFailed
 	}

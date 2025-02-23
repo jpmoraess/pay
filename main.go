@@ -110,6 +110,8 @@ func main() {
 		}
 	}()
 
+	go runTaskProcessor(redisOpt, store)
+
 	gracefulShutdown(ctx, srv, errCh)
 }
 
@@ -220,4 +222,13 @@ func setupMiddlewares(router *gin.Engine, cfg *config.Config) {
 		AllowCredentials: true,
 	}))
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
+}
+
+func runTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store) {
+	taskProcessor := worker.NewRedisTaskProcessor(store, redisOpt)
+	log.Info().Msg("starting task processor")
+	err := taskProcessor.Start()
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to start task processor")
+	}
 }
