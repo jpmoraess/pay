@@ -2,9 +2,9 @@ package usecases
 
 import (
 	"context"
-	"github.com/jpmoraess/pay/gateway"
 	"github.com/jpmoraess/pay/internal/application/ports"
 	"github.com/jpmoraess/pay/internal/domain"
+	"github.com/jpmoraess/pay/internal/infra/gateway"
 )
 
 type paymentUseCase struct {

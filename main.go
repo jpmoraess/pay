@@ -15,10 +15,10 @@ import (
 	db "github.com/jpmoraess/pay/db/sqlc"
 	"github.com/jpmoraess/pay/docs"
 	_ "github.com/jpmoraess/pay/docs"
-	"github.com/jpmoraess/pay/gateway"
 	"github.com/jpmoraess/pay/internal/adapters/database"
 	"github.com/jpmoraess/pay/internal/application/ports"
 	"github.com/jpmoraess/pay/internal/application/usecases"
+	"github.com/jpmoraess/pay/internal/infra/gateway"
 	handlers "github.com/jpmoraess/pay/internal/infra/http"
 	"github.com/jpmoraess/pay/token"
 	"github.com/rs/zerolog"
@@ -179,6 +179,9 @@ func setupRouter(
 	setupMiddlewares(router, cfg)
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	// asaas webhook route
+	gateway.NewAsaasWebhook(router, cfg)
 
 	handlers.NewUserHandler(router, userService)
 	handlers.NewTokenHandler(cfg, tokenMaker, router, userService, sessionService)
