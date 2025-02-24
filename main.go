@@ -77,7 +77,6 @@ func main() {
 	}
 
 	taskDistributor := worker.NewRedisTaskDistributor(redisOpt)
-	_ = taskDistributor
 
 	tokenMaker, err := token.NewPasetoMaker(cfg.SymmetricKey)
 	if err != nil {
@@ -91,8 +90,8 @@ func main() {
 	sessionRepository := database.NewSessionRepository(store)
 	sessionUseCase := usecases.NewSessionUseCase(sessionRepository)
 
-	userRepository := database.NewUserRepository(store)
-	userUseCase := usecases.NewUserUseCase(cfg, tokenMaker, userRepository, sessionUseCase, taskDistributor)
+	userRepository := database.NewUserRepository(store, taskDistributor)
+	userUseCase := usecases.NewUserUseCase(cfg, tokenMaker, userRepository, sessionUseCase)
 
 	paymentRepository := database.NewPaymentRepository(store)
 	paymentUseCase := usecases.NewPaymentUseCase(paymentRepository, asaas)

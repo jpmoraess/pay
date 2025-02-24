@@ -3,31 +3,26 @@ package usecases
 import (
 	"context"
 	"errors"
-	"github.com/hibiken/asynq"
 	"github.com/jpmoraess/pay/config"
 	db "github.com/jpmoraess/pay/db/sqlc"
 	"github.com/jpmoraess/pay/internal/application/ports"
 	"github.com/jpmoraess/pay/internal/domain"
 	"github.com/jpmoraess/pay/token"
 	"github.com/jpmoraess/pay/util"
-	"github.com/jpmoraess/pay/worker"
 	"golang.org/x/crypto/bcrypt"
-	"time"
 )
 
 var (
-	ErrUserNotFound          = errors.New("user not found")
-	ErrInvalidPassword       = errors.New("invalid password")
-	ErrUserAlreadyExists     = errors.New("user already exists")
-	ErrSendEmailVerifyFailed = errors.New("failed to distribute task to send verify email")
+	ErrUserNotFound      = errors.New("user not found")
+	ErrInvalidPassword   = errors.New("invalid password")
+	ErrUserAlreadyExists = errors.New("user already exists")
 )
 
 type userUseCase struct {
-	cfg             *config.Config
-	tokenMaker      token.Maker
-	repository      ports.UserRepository
-	sessionService  ports.SessionService
-	taskDistributor worker.TaskDistributor
+	cfg            *config.Config
+	tokenMaker     token.Maker
+	repository     ports.UserRepository
+	sessionService ports.SessionService
 }
 
 func NewUserUseCase(
@@ -35,14 +30,12 @@ func NewUserUseCase(
 	tokenMaker token.Maker,
 	repository ports.UserRepository,
 	sessionService ports.SessionService,
-	taskDistributor worker.TaskDistributor,
 ) *userUseCase {
 	return &userUseCase{
-		cfg:             cfg,
-		tokenMaker:      tokenMaker,
-		repository:      repository,
-		sessionService:  sessionService,
-		taskDistributor: taskDistributor,
+		cfg:            cfg,
+		tokenMaker:     tokenMaker,
+		repository:     repository,
+		sessionService: sessionService,
 	}
 }
 
@@ -58,19 +51,6 @@ func (uc *userUseCase) Create(ctx context.Context, input *ports.CreateUserInput)
 			return nil, ErrUserAlreadyExists
 		}
 		return nil, err
-	}
-
-	taskPayload := &worker.PayloadSendVerifyEmail{
-		Email: user.Email,
-	}
-	opts := []asynq.Option{
-		asynq.MaxRetry(10),
-		asynq.ProcessIn(5 * time.Second),
-		asynq.Queue(worker.QueueCritical),
-	}
-	err = uc.taskDistributor.DistributeTaskSendVerifyEmail(ctx, taskPayload, opts...)
-	if err != nil {
-		return nil, ErrSendEmailVerifyFailed
 	}
 
 	output := &ports.CreateUserOutput{
