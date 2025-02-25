@@ -79,19 +79,27 @@ func main() {
 		Timeout: time.Second * 10,
 	})
 
+	// tenants
 	tenantRepository := database.NewTenantRepository(store)
 	tenantUseCase := usecases.NewTenantUseCase(tenantRepository)
 
+	// sessions
 	sessionRepository := database.NewSessionRepository(store)
 	sessionUseCase := usecases.NewSessionUseCase(sessionRepository)
 
+	// users
 	userRepository := database.NewUserRepository(store)
 	userUseCase := usecases.NewUserUseCase(cfg, tokenMaker, userRepository, sessionUseCase)
 
+	// payments
 	paymentRepository := database.NewPaymentRepository(store)
 	paymentUseCase := usecases.NewPaymentUseCase(paymentRepository, asaas)
 
-	router := setupRouter(cfg, tokenMaker, userUseCase, tenantUseCase, sessionUseCase, paymentUseCase)
+	// services
+	serviceRepository := database.NewServiceRepository(store)
+	serviceUseCase := usecases.NewServiceUseCase(serviceRepository)
+
+	router := setupRouter(cfg, tokenMaker, userUseCase, tenantUseCase, sessionUseCase, paymentUseCase, serviceUseCase)
 
 	srv := mustInitServer(router, cfg)
 
@@ -178,6 +186,7 @@ func setupRouter(
 	tenantUseCase ports.TenantService,
 	sessionService ports.SessionService,
 	paymentService ports.PaymentService,
+	serviceUseCase ports.ServiceService,
 ) *gin.Engine {
 	router := gin.Default()
 	setupMiddlewares(router, cfg)
@@ -191,6 +200,7 @@ func setupRouter(
 	handlers.NewUserHandler(router, userService)
 	handlers.NewTenantHandler(router, tenantUseCase)
 	handlers.NewPaymentHandler(router, tokenMaker, paymentService)
+	handlers.NewServiceHandler(router, tokenMaker, serviceUseCase)
 	handlers.NewTokenHandler(cfg, tokenMaker, router, userService, sessionService)
 
 	return router

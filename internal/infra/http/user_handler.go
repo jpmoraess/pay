@@ -53,7 +53,7 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		return
 	}
 
-	output, err := h.userService.Create(c, &ports.CreateUserInput{
+	output, err := h.userService.Create(c.Request.Context(), &ports.CreateUserInput{
 		FullName: req.FullName,
 		Email:    req.Email,
 		Password: req.Password,
@@ -110,7 +110,7 @@ func (h *UserHandler) UserLogin(c *gin.Context) {
 	c.Set("client-ip", c.ClientIP())
 	c.Set("user-agent", c.Request.UserAgent())
 
-	output, err := h.userService.Login(c, &ports.LoginUserInput{
+	output, err := h.userService.Login(c.Request.Context(), &ports.LoginUserInput{
 		Email:    req.Email,
 		Password: req.Password,
 	})

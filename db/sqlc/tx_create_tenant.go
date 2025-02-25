@@ -41,7 +41,7 @@ func (store *SQLStore) CreateTenantTx(ctx context.Context, params CreateTenantTx
 			Email:    tenant.Email,
 			FullName: params.FullName,
 			Password: params.Password,
-			Role:     "admin",
+			Role:     "admin", // create const
 		})
 		if err != nil {
 			return err

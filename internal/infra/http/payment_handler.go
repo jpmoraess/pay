@@ -20,7 +20,7 @@ func NewPaymentHandler(router *gin.Engine, tokenMaker token.Maker, paymentServic
 	group := router.Group("/payments").
 		Use(middleware.AuthMiddleware(tokenMaker))
 	{
-		group.POST("/", handler.CreatePayment)
+		group.POST("/", handler.CreatePayment).Use(middleware.RoleRequired([]string{"admin"}))
 	}
 }
 
@@ -59,7 +59,7 @@ func (h *PaymentHandler) CreatePayment(c *gin.Context) {
 		return
 	}
 
-	output, err := h.paymentService.Create(c, &ports.CreatePaymentInput{
+	output, err := h.paymentService.Create(c.Request.Context(), &ports.CreatePaymentInput{
 		Value:   req.Value,
 		DueDate: parsedDueDate,
 	})

@@ -60,7 +60,7 @@ func (h *TokenHandler) RenewToken(c *gin.Context) {
 		return
 	}
 
-	session, err := h.sessionService.GetSession(c, refreshPayload.ID)
+	session, err := h.sessionService.GetSession(c.Request.Context(), refreshPayload.ID)
 	if err != nil {
 		if errors.Is(err, usecases.ErrSessionNotFound) {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
@@ -95,6 +95,7 @@ func (h *TokenHandler) RenewToken(c *gin.Context) {
 	}
 
 	accessToken, accessTokenPayload, err := h.tokenMaker.CreateToken(
+		refreshPayload.TenantID,
 		refreshPayload.Email,
 		refreshPayload.Role,
 		h.cfg.AccessTokenDuration,

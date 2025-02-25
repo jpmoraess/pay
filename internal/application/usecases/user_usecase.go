@@ -3,6 +3,7 @@ package usecases
 import (
 	"context"
 	"errors"
+	"github.com/google/uuid"
 	"github.com/jpmoraess/pay/config"
 	db "github.com/jpmoraess/pay/db/sqlc"
 	"github.com/jpmoraess/pay/internal/application/ports"
@@ -30,7 +31,7 @@ func NewUserUseCase(cfg *config.Config, tokenMaker token.Maker, repository ports
 }
 
 func (uc *userUseCase) Create(ctx context.Context, input *ports.CreateUserInput) (*ports.CreateUserOutput, error) {
-	user, err := domain.NewUser(input.FullName, input.Email, input.Password)
+	user, err := domain.NewUser(uuid.New(), input.FullName, input.Email, input.Password, "service_provider")
 	if err != nil {
 		return nil, err
 	}
@@ -68,12 +69,12 @@ func (uc *userUseCase) Login(ctx context.Context, input *ports.LoginUserInput) (
 		return nil, err
 	}
 
-	accessToken, accessTokenPayload, err := uc.tokenMaker.CreateToken(user.Email, "simple", uc.cfg.AccessTokenDuration)
+	accessToken, accessTokenPayload, err := uc.tokenMaker.CreateToken(user.TenantID, user.Email, user.Role, uc.cfg.AccessTokenDuration)
 	if err != nil {
 		return nil, err
 	}
 
-	refreshToken, refreshTokenPayload, err := uc.tokenMaker.CreateToken(user.Email, "simple", uc.cfg.RefreshTokenDuration)
+	refreshToken, refreshTokenPayload, err := uc.tokenMaker.CreateToken(user.TenantID, user.Email, user.Role, uc.cfg.RefreshTokenDuration)
 	if err != nil {
 		return nil, err
 	}

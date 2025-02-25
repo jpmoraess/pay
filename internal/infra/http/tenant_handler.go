@@ -50,7 +50,7 @@ func (h *TenantHandler) RegisterTenant(c *gin.Context) {
 		return
 	}
 
-	output, err := h.tenantService.Register(c, &ports.RegisterTenantInput{
+	output, err := h.tenantService.Register(c.Request.Context(), &ports.RegisterTenantInput{
 		Name:     req.Name,
 		Email:    req.Email,
 		FullName: req.FullName,

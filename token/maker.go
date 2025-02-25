@@ -1,8 +1,11 @@
 package token
 
-import "time"
+import (
+	"github.com/google/uuid"
+	"time"
+)
 
 type Maker interface {
-	CreateToken(email string, role string, duration time.Duration) (string, *Payload, error)
+	CreateToken(tenantID uuid.UUID, email string, role string, duration time.Duration) (string, *Payload, error)
 	VerifyToken(token string) (*Payload, error)
 }

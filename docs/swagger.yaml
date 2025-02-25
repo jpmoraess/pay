@@ -18,6 +18,33 @@ definitions:
       value:
         type: number
     type: object
+  http.createServiceRequest:
+    properties:
+      description:
+        example: This is a description
+        type: string
+      name:
+        example: Haircut
+        type: string
+      price:
+        example: 29.99
+        type: number
+    required:
+    - description
+    - name
+    - price
+    type: object
+  http.createServiceResponse:
+    properties:
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      price:
+        type: number
+    type: object
   http.createUserRequest:
     properties:
       email:
@@ -173,6 +200,36 @@ paths:
       summary: Create payment
       tags:
       - payments
+  /services:
+    post:
+      consumes:
+      - application/json
+      description: Perform service creation
+      parameters:
+      - description: Service request data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.createServiceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/http.createServiceResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create service
+      tags:
+      - services
   /tenants:
     post:
       consumes:
