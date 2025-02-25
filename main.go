@@ -79,6 +79,9 @@ func main() {
 		Timeout: time.Second * 10,
 	})
 
+	tenantRepository := database.NewTenantRepository(store)
+	tenantUseCase := usecases.NewTenantUseCase(tenantRepository)
+
 	sessionRepository := database.NewSessionRepository(store)
 	sessionUseCase := usecases.NewSessionUseCase(sessionRepository)
 
@@ -88,7 +91,7 @@ func main() {
 	paymentRepository := database.NewPaymentRepository(store)
 	paymentUseCase := usecases.NewPaymentUseCase(paymentRepository, asaas)
 
-	router := setupRouter(cfg, tokenMaker, userUseCase, sessionUseCase, paymentUseCase)
+	router := setupRouter(cfg, tokenMaker, userUseCase, tenantUseCase, sessionUseCase, paymentUseCase)
 
 	srv := mustInitServer(router, cfg)
 
@@ -172,6 +175,7 @@ func setupRouter(
 	cfg *config.Config,
 	tokenMaker token.Maker,
 	userService ports.UserService,
+	tenantUseCase ports.TenantService,
 	sessionService ports.SessionService,
 	paymentService ports.PaymentService,
 ) *gin.Engine {
@@ -183,10 +187,11 @@ func setupRouter(
 	// asaas webhook route
 	gateway.NewAsaasWebhook(router, cfg)
 
-	handlers.NewUserHandler(router, userService)
-	handlers.NewTokenHandler(cfg, tokenMaker, router, userService, sessionService)
 	handlers.NewHelloHandler(router, tokenMaker)
+	handlers.NewUserHandler(router, userService)
+	handlers.NewTenantHandler(router, tenantUseCase)
 	handlers.NewPaymentHandler(router, tokenMaker, paymentService)
+	handlers.NewTokenHandler(cfg, tokenMaker, router, userService, sessionService)
 
 	return router
 }

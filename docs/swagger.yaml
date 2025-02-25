@@ -62,6 +62,33 @@ definitions:
       session_id:
         type: string
     type: object
+  http.registerTenantRequest:
+    properties:
+      email:
+        example: john_doe@mail.com
+        type: string
+      full_name:
+        example: John Doe Silva
+        type: string
+      name:
+        example: John Doe Barber
+        type: string
+      password:
+        example: secretPwd
+        maxLength: 20
+        minLength: 8
+        type: string
+    required:
+    - email
+    - full_name
+    - name
+    - password
+    type: object
+  http.registerTenantResponse:
+    properties:
+      id:
+        type: string
+    type: object
   http.renewAccessTokenRequest:
     properties:
       refresh_token:
@@ -146,6 +173,34 @@ paths:
       summary: Create payment
       tags:
       - payments
+  /tenants:
+    post:
+      consumes:
+      - application/json
+      description: Perform tenant registration
+      parameters:
+      - description: register request data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.registerTenantRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/http.registerTenantResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register tenant
+      tags:
+      - tenants
   /tokens/renew:
     post:
       consumes:
