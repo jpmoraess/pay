@@ -3,7 +3,6 @@ package usecases
 import (
 	"context"
 	"errors"
-	"github.com/google/uuid"
 	"github.com/jpmoraess/pay/config"
 	db "github.com/jpmoraess/pay/db/sqlc"
 	"github.com/jpmoraess/pay/internal/application/ports"
@@ -31,7 +30,7 @@ func NewUserUseCase(cfg *config.Config, tokenMaker token.Maker, repository ports
 }
 
 func (uc *userUseCase) Create(ctx context.Context, input *ports.CreateUserInput) (*ports.CreateUserOutput, error) {
-	user, err := domain.NewUser(uuid.New(), input.FullName, input.Email, input.Password, "service_provider")
+	user, err := domain.NewUser(input.TenantID, input.FullName, input.Email, input.Password, input.Role)
 	if err != nil {
 		return nil, err
 	}
@@ -45,6 +44,7 @@ func (uc *userUseCase) Create(ctx context.Context, input *ports.CreateUserInput)
 	}
 
 	output := &ports.CreateUserOutput{
+		ID:        user.ID,
 		FullName:  user.FullName,
 		Email:     user.Email,
 		CreatedAt: user.CreatedAt,

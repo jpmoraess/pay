@@ -197,8 +197,9 @@ func setupRouter(
 	gateway.NewAsaasWebhook(router, cfg)
 
 	handlers.NewHelloHandler(router, tokenMaker)
-	handlers.NewUserHandler(router, userService)
 	handlers.NewTenantHandler(router, tenantUseCase)
+	handlers.NewAuthHandler(router, tokenMaker, userService)
+	handlers.NewUserHandler(router, tokenMaker, userService)
 	handlers.NewPaymentHandler(router, tokenMaker, paymentService)
 	handlers.NewServiceHandler(router, tokenMaker, serviceUseCase)
 	handlers.NewTokenHandler(cfg, tokenMaker, router, userService, sessionService)

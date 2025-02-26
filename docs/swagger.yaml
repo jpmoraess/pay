@@ -138,6 +138,8 @@ definitions:
         type: string
       full_name:
         type: string
+      id:
+        type: string
     type: object
 info:
   contact: {}
@@ -145,6 +147,34 @@ info:
   title: Pay
   version: 1.0.0
 paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Perform login
+      parameters:
+      - description: Login request data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/http.loginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.loginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Login
+      tags:
+      - auth
   /hello:
     get:
       consumes:
@@ -311,35 +341,9 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: Create user
-      tags:
-      - users
-  /users/login:
-    post:
-      consumes:
-      - application/json
-      description: Perform user login
-      parameters:
-      - description: Login request data
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/http.loginRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/http.loginResponse'
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: User login
       tags:
       - users
 securityDefinitions:

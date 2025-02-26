@@ -6,20 +6,23 @@ import (
 	"github.com/google/uuid"
 	"github.com/jpmoraess/pay/internal/application/ports"
 	"github.com/jpmoraess/pay/internal/application/usecases"
+	"github.com/jpmoraess/pay/internal/infra/middleware"
+	"github.com/jpmoraess/pay/token"
 	"net/http"
 	"time"
 )
 
 type UserHandler struct {
+	tokenMaker  token.Maker
 	userService ports.UserService
 }
 
-func NewUserHandler(router *gin.Engine, userService ports.UserService) {
+func NewUserHandler(router *gin.Engine, tokenMaker token.Maker, userService ports.UserService) {
 	handler := &UserHandler{userService: userService}
-	group := router.Group("/users")
+	group := router.Group("/users").
+		Use(middleware.AuthMiddleware(tokenMaker))
 	{
-		group.POST("/", handler.CreateUser)
-		group.POST("/login", handler.UserLogin)
+		group.POST("/", handler.CreateUser).Use(middleware.RoleRequired([]string{"admin"}))
 	}
 }
 
@@ -30,6 +33,7 @@ type createUserRequest struct {
 }
 
 type userResponse struct {
+	ID        uuid.UUID `json:"id"`
 	Email     string    `json:"email"`
 	FullName  string    `json:"full_name"`
 	CreatedAt time.Time `json:"created_at"`
@@ -42,6 +46,7 @@ type userResponse struct {
 //	@Tags			users
 //	@Accept			json
 //	@Produce		json
+//	@Security		BearerAuth
 //	@Param			request	body		createUserRequest	true	"create request data"
 //	@Success		201		{object}	userResponse
 //	@Failure		400		{object}	map[string]string
@@ -53,10 +58,19 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		return
 	}
 
+	auth, ok := c.MustGet("auth_payload").(*token.Payload)
+	if !ok {
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+		c.Abort()
+		return
+	}
+
 	output, err := h.userService.Create(c.Request.Context(), &ports.CreateUserInput{
+		TenantID: auth.TenantID,
 		FullName: req.FullName,
 		Email:    req.Email,
 		Password: req.Password,
+		Role:     "service_provider",
 	})
 	if err != nil {
 		if errors.Is(err, usecases.ErrUserAlreadyExists) {
@@ -68,72 +82,11 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 	}
 
 	response := userResponse{
+		ID:        output.ID,
 		Email:     output.Email,
 		FullName:  output.FullName,
 		CreatedAt: output.CreatedAt,
 	}
 
 	c.JSON(http.StatusCreated, response)
-}
-
-type loginRequest struct {
-	Email    string `json:"email" binding:"required" example:"john@doe.com"`
-	Password string `json:"password" binding:"required" example:"123456"`
-}
-
-type loginResponse struct {
-	SessionID             uuid.UUID `json:"session_id"`
-	AccessToken           string    `json:"access_token"`
-	AccessTokenExpiresAt  time.Time `json:"access_token_expires_at"`
-	RefreshToken          string    `json:"refresh_token"`
-	RefreshTokenExpiresAt time.Time `json:"refresh_token_expires_at"`
-}
-
-// UserLogin User login
-//
-//	@Summary		User login
-//	@Description	Perform user login
-//	@Tags			users
-//	@Accept			json
-//	@Produce		json
-//	@Param			request	body		loginRequest	true	"Login request data"
-//	@Success		200		{object}	loginResponse
-//	@Failure		400		{object}	map[string]string
-//	@Router			/users/login [post]
-func (h *UserHandler) UserLogin(c *gin.Context) {
-	var req loginRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.Set("client-ip", c.ClientIP())
-	c.Set("user-agent", c.Request.UserAgent())
-
-	output, err := h.userService.Login(c.Request.Context(), &ports.LoginUserInput{
-		Email:    req.Email,
-		Password: req.Password,
-	})
-	if err != nil {
-		if errors.Is(err, usecases.ErrUserNotFound) {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-			return
-		}
-		if errors.Is(err, usecases.ErrInvalidPassword) {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	response := loginResponse{
-		SessionID:             output.SessionID,
-		AccessToken:           output.AccessToken,
-		AccessTokenExpiresAt:  output.AccessTokenExpiresAt,
-		RefreshToken:          output.RefreshToken,
-		RefreshTokenExpiresAt: output.RefreshTokenExpiresAt,
-	}
-
-	c.JSON(http.StatusOK, response)
 }
