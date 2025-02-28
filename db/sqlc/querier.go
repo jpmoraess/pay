@@ -11,14 +11,25 @@ import (
 )
 
 type Querier interface {
+	CreateAppointment(ctx context.Context, arg CreateAppointmentParams) (Appointment, error)
 	CreatePayment(ctx context.Context, arg CreatePaymentParams) (Payment, error)
+	CreateSchedule(ctx context.Context, arg CreateScheduleParams) (Schedule, error)
+	CreateScheduleOverride(ctx context.Context, arg CreateScheduleOverrideParams) (ScheduleOverride, error)
+	CreateService(ctx context.Context, arg CreateServiceParams) (Service, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
+	CreateTenant(ctx context.Context, arg CreateTenantParams) (Tenant, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	// Query to show available slots
+	// Get available slots (not occupied or overridden)
+	GetAvailableSlots(ctx context.Context, arg GetAvailableSlotsParams) ([]int64, error)
 	GetPayment(ctx context.Context, id uuid.UUID) (Payment, error)
 	GetPaymentByExternal(ctx context.Context, externalID string) (Payment, error)
+	GetSchedule(ctx context.Context, id uuid.UUID) (Schedule, error)
+	GetService(ctx context.Context, id uuid.UUID) (Service, error)
 	GetSession(ctx context.Context, id uuid.UUID) (Session, error)
 	GetUser(ctx context.Context, id uuid.UUID) (User, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
+	ListServices(ctx context.Context, tenantID uuid.UUID) ([]Service, error)
 }
 
 var _ Querier = (*Queries)(nil)

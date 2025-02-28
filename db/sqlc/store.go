@@ -1,9 +1,13 @@
 package db
 
-import "github.com/jackc/pgx/v5/pgxpool"
+import (
+	"context"
+	"github.com/jackc/pgx/v5/pgxpool"
+)
 
 type Store interface {
 	Querier
+	CreateTenantTx(ctx context.Context, params CreateTenantTxParams) (CreateTenantTxResult, error)
 }
 
 type SQLStore struct {

@@ -12,13 +12,14 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (id, full_name, email, password, role)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING id, full_name, email, password, role, created_at
+INSERT INTO users (id, tenant_id, full_name, email, password, role)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, tenant_id, full_name, email, password, role, created_at
 `
 
 type CreateUserParams struct {
 	ID       uuid.UUID `json:"id"`
+	TenantID uuid.UUID `json:"tenant_id"`
 	FullName string    `json:"full_name"`
 	Email    string    `json:"email"`
 	Password string    `json:"password"`
@@ -28,6 +29,7 @@ type CreateUserParams struct {
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	row := q.db.QueryRow(ctx, createUser,
 		arg.ID,
+		arg.TenantID,
 		arg.FullName,
 		arg.Email,
 		arg.Password,
@@ -36,6 +38,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	var i User
 	err := row.Scan(
 		&i.ID,
+		&i.TenantID,
 		&i.FullName,
 		&i.Email,
 		&i.Password,
@@ -46,7 +49,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, full_name, email, password, role, created_at FROM users
+SELECT id, tenant_id, full_name, email, password, role, created_at FROM users
 WHERE id = $1
 LIMIT 1
 `
@@ -56,6 +59,7 @@ func (q *Queries) GetUser(ctx context.Context, id uuid.UUID) (User, error) {
 	var i User
 	err := row.Scan(
 		&i.ID,
+		&i.TenantID,
 		&i.FullName,
 		&i.Email,
 		&i.Password,
@@ -66,7 +70,7 @@ func (q *Queries) GetUser(ctx context.Context, id uuid.UUID) (User, error) {
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, full_name, email, password, role, created_at FROM users
+SELECT id, tenant_id, full_name, email, password, role, created_at FROM users
 WHERE email = $1
 LIMIT 1
 `
@@ -76,6 +80,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 	var i User
 	err := row.Scan(
 		&i.ID,
+		&i.TenantID,
 		&i.FullName,
 		&i.Email,
 		&i.Password,

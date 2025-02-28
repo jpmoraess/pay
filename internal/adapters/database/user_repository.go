@@ -17,19 +17,22 @@ func NewUserRepository(db db.Store) *userRepository {
 func newUser(userDB db.User) *domain.User {
 	return &domain.User{
 		ID:       userDB.ID,
+		TenantID: userDB.TenantID,
 		Email:    userDB.Email,
 		Password: userDB.Password,
 		FullName: userDB.FullName,
+		Role:     userDB.Role,
 	}
 }
 
 func newCreateUserParams(user *domain.User) db.CreateUserParams {
 	return db.CreateUserParams{
 		ID:       user.ID,
+		TenantID: user.TenantID,
 		Email:    user.Email,
 		Password: user.Password,
 		FullName: user.FullName,
-		Role:     "simple",
+		Role:     user.Role,
 	}
 }
 
